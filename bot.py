@@ -10,7 +10,7 @@ from telegram.ext import (
     CallbackQueryHandler,
 )
 
-TOKEN = "8674292035:AAHpSeffOF4WW3JgDJNzKgKQelfjCC8Qhjk"
+TOKEN = "8674292035:AAHRlHUZlQJZHFcPuFwWQ8borwZbFzmzeaA"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 

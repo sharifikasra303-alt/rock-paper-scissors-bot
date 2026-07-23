@@ -48,6 +48,7 @@ def get_balance(user_id):
     )
 
     result = cursor.fetchone()
+
     conn.close()
 
     if result:
@@ -80,6 +81,7 @@ def get_all_users():
     """)
 
     users = cursor.fetchall()
+
     conn.close()
 
     return users

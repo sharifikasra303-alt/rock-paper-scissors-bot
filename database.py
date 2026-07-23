@@ -85,3 +85,15 @@ def get_all_users():
     conn.close()
 
     return users
+def set_balance(user_id, amount):
+    conn = connect()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    UPDATE users
+    SET balance = ?
+    WHERE user_id = ?
+    """, (amount, user_id))
+
+    conn.commit()
+    conn.close()

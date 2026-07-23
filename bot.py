@@ -20,7 +20,7 @@ from database import (
 )
 
 
-TOKEN = "YOUR_TOKEN"
+TOKEN = "8674292035:AAFB4y-isBof0U1YL9UPvbcevUbBdc0g8cY"
 
 ADMIN_ID = 5125387850
 

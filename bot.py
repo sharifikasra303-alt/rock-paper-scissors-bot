@@ -4,7 +4,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, ContextTyp
 from database import add_user, get_balance, set_balance, create_table
 
 
-TOKEN = "YOUR_TOKEN"
+TOKEN = "8674292035:AAFB4y-isBof0U1YL9UPvbcevUbBdc0g8cY"
 
 ADMIN_ID = 5125387850
 

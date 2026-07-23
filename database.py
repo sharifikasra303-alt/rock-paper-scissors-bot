@@ -7,7 +7,9 @@ def connect():
     return sqlite3.connect(DB_NAME)
 
 
+
 def create_table():
+
     conn = connect()
     cursor = conn.cursor()
 
@@ -24,7 +26,9 @@ def create_table():
     conn.close()
 
 
+
 def add_user(user_id, first_name, username):
+
     conn = connect()
     cursor = conn.cursor()
 
@@ -32,13 +36,20 @@ def add_user(user_id, first_name, username):
     INSERT OR IGNORE INTO users
     (user_id, first_name, username)
     VALUES (?, ?, ?)
-    """, (user_id, first_name, username))
+    """,
+    (
+        user_id,
+        first_name,
+        username
+    ))
 
     conn.commit()
     conn.close()
 
 
+
 def get_balance(user_id):
+
     conn = connect()
     cursor = conn.cursor()
 
@@ -57,21 +68,52 @@ def get_balance(user_id):
     return 0
 
 
-def update_balance(user_id, amount):
+
+# اضافه کردن موجودی
+def add_balance(user_id, amount):
+
     conn = connect()
     cursor = conn.cursor()
 
     cursor.execute("""
     UPDATE users
     SET balance = balance + ?
-    WHERE user_id=?
-    """, (amount, user_id))
+    WHERE user_id = ?
+    """,
+    (
+        amount,
+        user_id
+    ))
 
     conn.commit()
     conn.close()
 
 
+
+# تغییر مستقیم موجودی
+def set_balance(user_id, amount):
+
+    conn = connect()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    UPDATE users
+    SET balance = ?
+    WHERE user_id = ?
+    """,
+    (
+        amount,
+        user_id
+    ))
+
+    conn.commit()
+    conn.close()
+
+
+
+# لیست همه کاربران
 def get_all_users():
+
     conn = connect()
     cursor = conn.cursor()
 
@@ -85,15 +127,3 @@ def get_all_users():
     conn.close()
 
     return users
-def set_balance(user_id, amount):
-    conn = connect()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-    UPDATE users
-    SET balance = ?
-    WHERE user_id = ?
-    """, (amount, user_id))
-
-    conn.commit()
-    conn.close()

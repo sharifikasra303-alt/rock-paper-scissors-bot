@@ -8,7 +8,7 @@ from telegram.ext import (
     filters
 )
 
-from from database import (
+from database import (
     create_table,
     add_user,
     get_balance,

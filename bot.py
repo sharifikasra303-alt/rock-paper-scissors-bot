@@ -1,18 +1,28 @@
 from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters,
+    ConversationHandler
+)
 
 from database import (
     add_user,
     get_balance,
-    set_balance,
     create_table,
-    get_all_users
+    get_all_users,
+    add_balance
 )
 
 
 TOKEN = "8674292035:AAFB4y-isBof0U1YL9UPvbcevUbBdc0g8cY"
 
 ADMIN_ID = 5125387850
+
+
+ADD_USER_ID, ADD_AMOUNT = range(2)
 
 
 # منوی اصلی
@@ -74,31 +84,107 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# دستور افزودن موجودی قدیمی
-async def add_coin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# شروع شارژ کاربر
+async def start_add_balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if update.effective_user.id != ADMIN_ID:
-        return
+        return ConversationHandler.END
+
+    await update.message.reply_text(
+        "🆔 آیدی کاربری که می‌خواهی شارژ کنی را ارسال کن:"
+    )
+
+    return ADD_USER_ID
+
+
+
+# گرفتن آیدی
+async def get_target_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
 
-        target = int(context.args[0])
-        amount = int(context.args[1])
+        user_id = int(update.message.text)
 
-        set_balance(
-            target,
-            amount
-        )
+        context.user_data["target_user"] = user_id
 
         await update.message.reply_text(
-            f"✅ موجودی کاربر {target} شد {amount} تومان"
+            "💰 مقدار شارژ را وارد کن:"
         )
+
+        return ADD_AMOUNT
+
 
     except:
 
         await update.message.reply_text(
-            "مثال:\n/add 123456789 50000"
+            "❌ آیدی صحیح نیست."
         )
+
+        return ADD_USER_ID
+
+
+
+# گرفتن مبلغ
+async def save_balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    try:
+
+        amount = int(update.message.text)
+
+        user_id = context.user_data["target_user"]
+
+        add_balance(
+            user_id,
+            amount
+        )
+
+
+        await update.message.reply_text(
+            f"✅ {amount} تومان به کاربر {user_id} اضافه شد."
+        )
+
+
+    except:
+
+        await update.message.reply_text(
+            "❌ مبلغ اشتباه است."
+        )
+
+
+    return ConversationHandler.END
+
+
+
+# لیست کاربران
+async def show_users(update: Update):
+
+    users = get_all_users()
+
+    if not users:
+
+        await update.message.reply_text(
+            "❌ کاربری وجود ندارد."
+        )
+
+        return
+
+
+    text = "👥 لیست کاربران:\n\n"
+
+
+    for i, user in enumerate(users, start=1):
+
+        uid, name, username, balance = user
+
+        text += (
+            f"{i}) {name}\n"
+            f"🆔 {uid}\n"
+            f"👤 @{username if username else 'ندارد'}\n"
+            f"💰 {balance} تومان\n\n"
+        )
+
+
+    await update.message.reply_text(text)
 
 
 
@@ -108,8 +194,6 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
 
 
-
-    # موجودی
     if text == "💰 موجودی":
 
         balance = get_balance(user_id)
@@ -120,48 +204,38 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-    # خرید
-    elif text == "🪙 خرید سکه":
-
-        await update.message.reply_text(
-            "🪙 خرید سکه\n\n"
-            "5000 تومان\n"
-            "25000 تومان\n"
-            "50000 تومان\n"
-            "100000 تومان\n"
-            "200000 تومان"
-        )
-
-
-
-    # برداشت
-    elif text == "💸 برداشت وجه":
-
-        await update.message.reply_text(
-            "💸 این بخش به‌زودی آماده می‌شود."
-        )
-
-
-
-    # دعوت
-    elif text == "👥 دعوت دوستان":
-
-        await update.message.reply_text(
-            "👥 لینک دعوت به‌زودی اضافه می‌شود."
-        )
-
-
-
-    # بازی
     elif text == "🎮 شروع دوئل":
 
         await update.message.reply_text(
-            "🎮 بخش دوئل در مرحله بعد ساخته می‌شود."
+            "🎮 بخش دوئل به‌زودی ساخته می‌شود."
         )
 
 
 
-    # ورود به پنل مدیر
+    elif text == "🪙 خرید سکه":
+
+        await update.message.reply_text(
+            "🪙 خرید سکه به‌زودی فعال می‌شود."
+        )
+
+
+
+    elif text == "👥 دعوت دوستان":
+
+        await update.message.reply_text(
+            "👥 لینک دعوت به‌زودی ساخته می‌شود."
+        )
+
+
+
+    elif text == "💸 برداشت وجه":
+
+        await update.message.reply_text(
+            "💸 بخش برداشت به‌زودی آماده می‌شود."
+        )
+
+
+
     elif text == "👑 پنل مدیر":
 
         if user_id != ADMIN_ID:
@@ -174,46 +248,21 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-    # لیست کاربران
     elif text == "👥 لیست کاربران":
 
         if user_id != ADMIN_ID:
             return
 
-
-        users = get_all_users()
-
-
-        message = "👥 لیست کاربران:\n\n"
-
-
-        for i, user in enumerate(users, start=1):
-
-            uid, name, username, balance = user
-
-            message += (
-                f"{i}) {name}\n"
-                f"🆔 {uid}\n"
-                f"👤 @{username if username else 'ندارد'}\n"
-                f"💰 {balance} تومان\n\n"
-            )
-
-
-        await update.message.reply_text(
-            message
-        )
+        await show_users(update)
 
 
 
-    # آمار
     elif text == "📊 آمار ربات":
 
         if user_id != ADMIN_ID:
             return
 
-
         users = get_all_users()
-
 
         await update.message.reply_text(
             f"📊 آمار ربات\n\n"
@@ -222,27 +271,23 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-    # افزودن موجودی
-    elif text == "💰 افزودن موجودی":
-
-        if user_id != ADMIN_ID:
-            return
-
-
-        await update.message.reply_text(
-            "برای افزودن موجودی از دستور زیر استفاده کن:\n\n"
-            "/add USER_ID AMOUNT"
-        )
-
-
-
-    # بازگشت
     elif text == "🔙 بازگشت":
 
         await update.message.reply_text(
             "منوی اصلی",
             reply_markup=main_keyboard(user_id)
         )
+
+
+
+async def add_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    if update.effective_user.id != ADMIN_ID:
+        return
+
+    await update.message.reply_text(
+        "برای شارژ از پنل مدیر استفاده کن."
+    )
 
 
 
@@ -253,13 +298,51 @@ def main():
     app = Application.builder().token(TOKEN).build()
 
 
-    app.add_handler(
-        CommandHandler("start", start)
+    charge_handler = ConversationHandler(
+        entry_points=[
+            MessageHandler(
+                filters.Regex("^💰 افزودن موجودی$"),
+                start_add_balance
+            )
+        ],
+
+        states={
+
+            ADD_USER_ID: [
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND,
+                    get_target_user
+                )
+            ],
+
+            ADD_AMOUNT: [
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND,
+                    save_balance
+                )
+            ]
+        },
+
+        fallbacks=[]
     )
 
 
     app.add_handler(
-        CommandHandler("add", add_coin)
+        CommandHandler(
+            "start",
+            start
+        )
+    )
+
+
+    app.add_handler(charge_handler)
+
+
+    app.add_handler(
+        CommandHandler(
+            "add",
+            add_command
+        )
     )
 
 

@@ -26,7 +26,6 @@ def create_table():
     """)
 
 
-
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS payments (
 
@@ -35,6 +34,29 @@ def create_table():
         amount INTEGER,
         photo_id TEXT,
         status TEXT DEFAULT 'pending'
+
+    )
+    """)
+
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS duels (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        player1_id INTEGER,
+
+        player2_id INTEGER,
+
+        amount INTEGER,
+
+        player1_choice TEXT,
+
+        player2_choice TEXT,
+
+        winner_id INTEGER,
+
+        status TEXT DEFAULT 'waiting'
 
     )
     """)
@@ -52,7 +74,6 @@ def add_user(user_id, first_name, username):
     conn = connect()
     cursor = conn.cursor()
 
-
     cursor.execute("""
     INSERT OR IGNORE INTO users
     (user_id, first_name, username)
@@ -66,7 +87,6 @@ def add_user(user_id, first_name, username):
         username
     ))
 
-
     conn.commit()
     conn.close()
 
@@ -79,7 +99,6 @@ def get_balance(user_id):
     conn = connect()
     cursor = conn.cursor()
 
-
     cursor.execute(
         """
         SELECT balance
@@ -89,16 +108,13 @@ def get_balance(user_id):
         (user_id,)
     )
 
-
     result = cursor.fetchone()
-
 
     conn.close()
 
 
     if result:
         return result[0]
-
 
     return 0
 
@@ -110,7 +126,6 @@ def update_balance(user_id, amount):
 
     conn = connect()
     cursor = conn.cursor()
-
 
     cursor.execute(
         """
@@ -124,7 +139,6 @@ def update_balance(user_id, amount):
         )
     )
 
-
     conn.commit()
     conn.close()
 
@@ -136,7 +150,6 @@ def set_balance(user_id, amount):
 
     conn = connect()
     cursor = conn.cursor()
-
 
     cursor.execute(
         """
@@ -150,7 +163,6 @@ def set_balance(user_id, amount):
         )
     )
 
-
     conn.commit()
     conn.close()
 
@@ -163,7 +175,6 @@ def get_all_users():
     conn = connect()
     cursor = conn.cursor()
 
-
     cursor.execute(
         """
         SELECT user_id, first_name, username, balance
@@ -171,12 +182,9 @@ def get_all_users():
         """
     )
 
-
     users = cursor.fetchall()
 
-
     conn.close()
-
 
     return users
 
@@ -184,11 +192,15 @@ def get_all_users():
 
 
 
+# =========================
+# پرداخت ها
+# =========================
+
+
 def create_payment(user_id, amount, photo_id):
 
     conn = connect()
     cursor = conn.cursor()
-
 
     cursor.execute(
         """
@@ -205,7 +217,6 @@ def create_payment(user_id, amount, photo_id):
         )
     )
 
-
     conn.commit()
     conn.close()
 
@@ -218,7 +229,6 @@ def get_pending_payments():
     conn = connect()
     cursor = conn.cursor()
 
-
     cursor.execute(
         """
         SELECT id, user_id, amount, photo_id
@@ -227,12 +237,9 @@ def get_pending_payments():
         """
     )
 
-
     payments = cursor.fetchall()
 
-
     conn.close()
-
 
     return payments
 
@@ -268,7 +275,9 @@ def approve_payment(payment_id):
         cursor.execute(
             """
             UPDATE users
+
             SET balance = balance + ?
+
             WHERE user_id=?
             """,
             (
@@ -281,7 +290,9 @@ def approve_payment(payment_id):
         cursor.execute(
             """
             UPDATE payments
+
             SET status='approved'
+
             WHERE id=?
             """,
             (payment_id,)
@@ -300,14 +311,213 @@ def reject_payment(payment_id):
     conn = connect()
     cursor = conn.cursor()
 
-
     cursor.execute(
         """
         UPDATE payments
+
         SET status='rejected'
+
         WHERE id=?
         """,
         (payment_id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+
+
+
+
+# =========================
+# دوئل آنلاین
+# =========================
+
+
+def create_duel(player_id, amount):
+
+    conn = connect()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO duels
+        (player1_id, amount)
+
+        VALUES (?, ?)
+        """,
+        (
+            player_id,
+            amount
+        )
+    )
+
+    conn.commit()
+    conn.close()
+
+
+
+
+
+def find_duel(amount, player_id):
+
+    conn = connect()
+    cursor = conn.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT id, player1_id
+
+        FROM duels
+
+        WHERE amount=?
+
+        AND status='waiting'
+
+        AND player1_id != ?
+
+        LIMIT 1
+        """,
+        (
+            amount,
+            player_id
+        )
+    )
+
+
+    duel = cursor.fetchone()
+
+    conn.close()
+
+    return duel
+
+
+
+
+
+def join_duel(duel_id, player2_id):
+
+    conn = connect()
+    cursor = conn.cursor()
+
+
+    cursor.execute(
+        """
+        UPDATE duels
+
+        SET player2_id=?,
+        status='playing'
+
+        WHERE id=?
+        """,
+        (
+            player2_id,
+            duel_id
+        )
+    )
+
+
+    conn.commit()
+    conn.close()
+
+
+
+
+
+def save_choice(duel_id, player, choice):
+
+    conn = connect()
+    cursor = conn.cursor()
+
+
+    if player == 1:
+
+        cursor.execute(
+            """
+            UPDATE duels
+
+            SET player1_choice=?
+
+            WHERE id=?
+            """,
+            (
+                choice,
+                duel_id
+            )
+        )
+
+
+    else:
+
+        cursor.execute(
+            """
+            UPDATE duels
+
+            SET player2_choice=?
+
+            WHERE id=?
+            """,
+            (
+                choice,
+                duel_id
+            )
+        )
+
+
+    conn.commit()
+    conn.close()
+
+
+
+
+
+def get_duel(duel_id):
+
+    conn = connect()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM duels
+
+        WHERE id=?
+        """,
+        (duel_id,)
+    )
+
+
+    duel = cursor.fetchone()
+
+    conn.close()
+
+    return duel
+
+
+
+
+
+def finish_duel(duel_id, winner_id):
+
+    conn = connect()
+    cursor = conn.cursor()
+
+
+    cursor.execute(
+        """
+        UPDATE duels
+
+        SET winner_id=?,
+        status='finished'
+
+        WHERE id=?
+        """,
+        (
+            winner_id,
+            duel_id
+        )
     )
 
 

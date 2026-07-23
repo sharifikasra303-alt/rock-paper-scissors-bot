@@ -252,7 +252,6 @@ def approve_payment(payment_id):
     conn = connect()
     cursor = conn.cursor()
 
-
     cursor.execute(
         """
         SELECT user_id, amount
@@ -262,22 +261,29 @@ def approve_payment(payment_id):
         (payment_id,)
     )
 
-
     payment = cursor.fetchone()
-
 
     if payment:
 
         user_id = payment[0]
         amount = payment[1]
 
+        # اگر کاربر نبود بساز
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO users
+            (user_id, balance)
+            VALUES (?, 0)
+            """,
+            (user_id,)
+        )
 
+
+        # افزایش موجودی
         cursor.execute(
             """
             UPDATE users
-
             SET balance = balance + ?
-
             WHERE user_id=?
             """,
             (
@@ -287,12 +293,11 @@ def approve_payment(payment_id):
         )
 
 
+        # تغییر وضعیت پرداخت
         cursor.execute(
             """
             UPDATE payments
-
             SET status='approved'
-
             WHERE id=?
             """,
             (payment_id,)

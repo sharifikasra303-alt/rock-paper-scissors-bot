@@ -241,9 +241,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif text == "🎮 شروع دوئل":
 
-        await update.message.reply_text(
-            "🎮 بخش دوئل به‌زودی آماده می‌شود."
-        )
+        await duel_menu(update, context)
 
 
     elif text == "👥 دعوت دوستان":

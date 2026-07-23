@@ -169,8 +169,7 @@ async def receive_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=keyboard
     )
 
-    del context.user_data["amount"]
-    async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    del context.user_data["amount"] async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = update.message.text
     user_id = update.effective_user.id

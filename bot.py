@@ -161,7 +161,7 @@ def main():
 
     print("Bot started...")
 
-    app.run_polling()
+    aapp.run_polling(drop_pending_updates=True)
 
 
 if __name__ == "__main__":

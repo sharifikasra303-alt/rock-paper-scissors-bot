@@ -191,7 +191,9 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-    elif text == "🪙 خرید سکه":
+    elif "خرید سکه" in text:
+
+    await buy_menu(update, context)
 
         await buy_menu(update, context)
 
@@ -221,11 +223,11 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-    elif text == "💸 برداشت وجه":
+    elif "برداشت وجه" in text:
 
-        await update.message.reply_text(
-            "💸 بخش برداشت به‌زودی آماده می‌شود."
-        )
+    await update.message.reply_text(
+        "💸 بخش برداشت به‌زودی آماده می‌شود."
+    )
 
 
     elif text == "👑 پنل مدیر":

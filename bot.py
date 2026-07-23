@@ -111,10 +111,13 @@ async def choose_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["amount"] = amount
 
     await update.message.reply_text(
-        "💰 خرید سکه (شارژ حساب)\n\n"
+        f"💰 خرید {amount} تومان\n\n"
         "💳 شماره کارت:\n"
         "6037991764297374\n"
         "به نام: علی شریفی\n\n"
+        "⚠️ فقط کارت به کارت\n"
+        "• رسید را ارسال کنید\n"
+        "• مسئولیت واریز اشتباه با شماست\n\n"
         "🧾 لطفا رسید خود را ارسال کنید:"
     )
 
@@ -167,7 +170,8 @@ async def receive_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     del context.user_data["amount"]
-    async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = update.message.text
     user_id = update.effective_user.id
@@ -198,6 +202,28 @@ async def receive_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await choose_amount(update, context)
 
 
+
+    elif text == "🎮 شروع دوئل":
+
+        await update.message.reply_text(
+            "🎮 بخش دوئل به‌زودی آماده می‌شود."
+        )
+
+
+    elif text == "👥 دعوت دوستان":
+
+        await update.message.reply_text(
+            "👥 لینک دعوت به‌زودی اضافه می‌شود."
+        )
+
+
+    elif text == "💸 برداشت وجه":
+
+        await update.message.reply_text(
+            "💸 بخش برداشت به‌زودی آماده می‌شود."
+        )
+
+
     elif text == "👑 پنل مدیر":
 
         if user_id != ADMIN_ID:
@@ -209,6 +235,7 @@ async def receive_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+
     elif text == "👥 لیست کاربران":
 
         if user_id != ADMIN_ID:
@@ -216,17 +243,19 @@ async def receive_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         users = get_all_users()
 
-        msg = "👥 کاربران:\n\n"
+        message = "👥 لیست کاربران:\n\n"
 
         for user in users:
 
-            msg += (
+            message += (
                 f"🆔 {user[0]}\n"
                 f"👤 {user[1]}\n"
                 f"💰 {user[3]} تومان\n\n"
             )
 
-        await update.message.reply_text(msg)
+        await update.message.reply_text(
+            message
+        )
 
 
 
@@ -237,9 +266,11 @@ async def receive_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         users = get_all_users()
 
+        total = len(users)
+
         await update.message.reply_text(
             f"📊 آمار ربات\n\n"
-            f"👥 تعداد کاربران: {len(users)}"
+            f"👥 تعداد کاربران: {total}"
         )
 
 
@@ -262,30 +293,6 @@ async def receive_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             "منوی اصلی",
             reply_markup=main_keyboard(user_id)
-        )
-
-
-
-    elif text == "🎮 شروع دوئل":
-
-        await update.message.reply_text(
-            "🎮 بخش دوئل به‌زودی آماده می‌شود."
-        )
-
-
-
-    elif text == "👥 دعوت دوستان":
-
-        await update.message.reply_text(
-            "👥 لینک دعوت به‌زودی اضافه می‌شود."
-        )
-
-
-
-    elif text == "💸 برداشت وجه":
-
-        await update.message.reply_text(
-            "💸 بخش برداشت به‌زودی آماده می‌شود."
         )
 
 
@@ -316,6 +323,7 @@ async def payment_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if payment[1] == user_id and payment[2] == amount:
 
             payment_id = payment[0]
+
             break
 
 
@@ -338,8 +346,8 @@ async def payment_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             user_id,
             f"✅ پرداخت شما تایید شد.\n\n"
-            f"💰 {amount} تومان به حساب شما اضافه شد.\n"
-            f"موجودی جدید: {get_balance(user_id)} تومان"
+            f"💰 مبلغ {amount} تومان اضافه شد.\n"
+            f"💳 موجودی جدید: {get_balance(user_id)} تومان"
         )
 
 
@@ -356,7 +364,7 @@ async def payment_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await context.bot.send_message(
             user_id,
-            "❌ رسید شما رد شد."
+            "❌ رسید شما تایید نشد."
         )
 
 

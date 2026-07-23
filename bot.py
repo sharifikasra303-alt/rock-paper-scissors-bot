@@ -4,7 +4,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, ContextTyp
 from database import add_user, get_balance, set_balance, create_table
 
 
-TOKEN = "8674292035:AAFB4y-isBof0U1YL9UPvbcevUbBdc0g8cY"
+TOKEN = "YOUR_TOKEN"
 
 ADMIN_ID = 5125387850
 
@@ -44,7 +44,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"سلام {user.first_name} 👋\n\n"
         f"🆔 آیدی شما: {user.id}\n"
         f"💰 موجودی شما: {balance} تومان\n\n"
-        f"🎮 به ربات سنگ، کاغذ، قیچی خوش آمدید!",
+        "🎮 به ربات سنگ، کاغذ، قیچی خوش آمدید!",
         reply_markup=get_keyboard(user.id)
     )
 
@@ -79,8 +79,7 @@ async def add_coin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except:
         await update.message.reply_text(
-            "مثال:\n"
-            "/add 123456789 50000"
+            "مثال:\n/add 123456789 50000"
         )
 
 
@@ -132,17 +131,19 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text(
             "👑 پنل مدیر\n\n"
-            "برای افزودن موجودی:\n\n"
+            "افزودن موجودی:\n\n"
             "/add USER_ID AMOUNT\n\n"
             "مثال:\n"
-            "/add 123456789 50000"
+            "/add 5125387850 50000"
         )
 
 
 def main():
+
     create_table()
 
     app = Application.builder().token(TOKEN).build()
+
 
     app.add_handler(
         CommandHandler("start", start)
@@ -159,9 +160,13 @@ def main():
         )
     )
 
+
     print("Bot started...")
 
-    aapp.run_polling(drop_pending_updates=True)
+
+    app.run_polling(
+        drop_pending_updates=True
+    )
 
 
 if __name__ == "__main__":

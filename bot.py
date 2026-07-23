@@ -1,11 +1,13 @@
-from telegram import Update, ReplyKeyboardMarkup
+# bot.py - بخش 1/2
+
+from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     CommandHandler,
     MessageHandler,
     ContextTypes,
     filters,
-    ConversationHandler
+    CallbackQueryHandler
 )
 
 from database import (
@@ -13,7 +15,10 @@ from database import (
     get_balance,
     create_table,
     get_all_users,
-    add_balance
+    create_payment,
+    get_pending_payments,
+    approve_payment,
+    reject_payment
 )
 
 
@@ -22,10 +27,6 @@ TOKEN = "8674292035:AAFB4y-isBof0U1YL9UPvbcevUbBdc0g8cY"
 ADMIN_ID = 5125387850
 
 
-ADD_USER_ID, ADD_AMOUNT = range(2)
-
-
-# منوی اصلی
 def main_keyboard(user_id):
 
     if user_id == ADMIN_ID:
@@ -34,7 +35,6 @@ def main_keyboard(user_id):
             ["👥 دعوت دوستان", "🪙 خرید سکه"],
             ["💸 برداشت وجه", "👑 پنل مدیر"]
         ]
-
     else:
         keyboard = [
             ["🎮 شروع دوئل", "💰 موجودی"],
@@ -48,17 +48,27 @@ def main_keyboard(user_id):
     )
 
 
-# منوی مدیر
 def admin_keyboard():
 
-    keyboard = [
-        ["👥 لیست کاربران", "💰 افزودن موجودی"],
-        ["📊 آمار ربات"],
-        ["🔙 بازگشت"]
-    ]
+    return ReplyKeyboardMarkup(
+        [
+            ["👥 لیست کاربران", "📊 آمار ربات"],
+            ["🧾 درخواست‌های پرداخت"],
+            ["🔙 بازگشت"]
+        ],
+        resize_keyboard=True
+    )
+
+
+def buy_keyboard():
 
     return ReplyKeyboardMarkup(
-        keyboard,
+        [
+            ["5000 تومان", "25000 تومان"],
+            ["50000 تومان", "100000 تومان"],
+            ["200000 تومان"],
+            ["🔙 بازگشت"]
+        ],
         resize_keyboard=True
     )
 
@@ -84,108 +94,86 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# شروع شارژ کاربر
-async def start_add_balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    if update.effective_user.id != ADMIN_ID:
-        return ConversationHandler.END
+async def buy_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
-        "🆔 آیدی کاربری که می‌خواهی شارژ کنی را ارسال کن:"
+        "💰 خرید سکه (شارژ حساب)\n\n"
+        "💳 شماره کارت:\n"
+        "6037991764297374\n"
+        "به نام: علی شریفی\n\n"
+        "⚠️ فقط کارت به کارت\n"
+        "• رسید را ارسال کنید\n"
+        "• مسئولیت واریز اشتباه با شماست",
+        reply_markup=buy_keyboard()
     )
 
-    return ADD_USER_ID
+
+async def select_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    amount = int(
+        update.message.text.replace(" تومان", "")
+    )
+
+    context.user_data["amount"] = amount
+
+    await update.message.reply_text(
+        f"💰 خرید {amount} تومان\n\n"
+        "💳 شماره کارت:\n"
+        "6037991764297374\n"
+        "به نام: علی شریفی\n\n"
+        "🧾 لطفا رسید خود را ارسال کنید:"
+    )
 
 
+async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-# گرفتن آیدی
-async def get_target_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    try:
-
-        user_id = int(update.message.text)
-
-        context.user_data["target_user"] = user_id
-
-        await update.message.reply_text(
-            "💰 مقدار شارژ را وارد کن:"
-        )
-
-        return ADD_AMOUNT
-
-
-    except:
-
-        await update.message.reply_text(
-            "❌ آیدی صحیح نیست."
-        )
-
-        return ADD_USER_ID
-
-
-
-# گرفتن مبلغ
-async def save_balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    try:
-
-        amount = int(update.message.text)
-
-        user_id = context.user_data["target_user"]
-
-        add_balance(
-            user_id,
-            amount
-        )
-
-
-        await update.message.reply_text(
-            f"✅ {amount} تومان به کاربر {user_id} اضافه شد."
-        )
-
-
-    except:
-
-        await update.message.reply_text(
-            "❌ مبلغ اشتباه است."
-        )
-
-
-    return ConversationHandler.END
-
-
-
-# لیست کاربران
-async def show_users(update: Update):
-
-    users = get_all_users()
-
-    if not users:
-
-        await update.message.reply_text(
-            "❌ کاربری وجود ندارد."
-        )
-
+    if "amount" not in context.user_data:
         return
 
+    photo_id = update.message.photo[-1].file_id
 
-    text = "👥 لیست کاربران:\n\n"
+    amount = context.user_data["amount"]
 
+    user_id = update.effective_user.id
 
-    for i, user in enumerate(users, start=1):
+    create_payment(
+        user_id,
+        amount,
+        photo_id
+    )
 
-        uid, name, username, balance = user
+    await update.message.reply_text(
+        "✅ رسید شما دریافت شد.\n\n"
+        "منتظر باشید رسید تایید شود و حساب شما شارژ شود."
+    )
 
-        text += (
-            f"{i}) {name}\n"
-            f"🆔 {uid}\n"
-            f"👤 @{username if username else 'ندارد'}\n"
-            f"💰 {balance} تومان\n\n"
-        )
+    keyboard = InlineKeyboardMarkup(
+        [[
+            InlineKeyboardButton(
+                "✅ تایید",
+                callback_data=f"approve_{user_id}_{amount}"
+            ),
+            InlineKeyboardButton(
+                "❌ رد",
+                callback_data=f"reject_{user_id}_{amount}"
+            )
+        ]]
+    )
 
+    await context.bot.send_photo(
+        ADMIN_ID,
+        photo_id,
+        caption=(
+            "🧾 درخواست شارژ جدید\n\n"
+            f"👤 کاربر: {update.effective_user.first_name}\n"
+            f"🆔 آیدی: {user_id}\n"
+            f"💰 مبلغ: {amount} تومان"
+        ),
+        reply_markup=keyboard
+    )
 
-    await update.message.reply_text(text)
-
+    del context.user_data["amount"]
+    # bot.py - بخش 2/2
 
 
 async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -203,21 +191,27 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+    elif text == "🪙 خرید سکه":
+
+        await buy_menu(update, context)
+
+
+    elif text in [
+        "5000 تومان",
+        "25000 تومان",
+        "50000 تومان",
+        "100000 تومان",
+        "200000 تومان"
+    ]:
+
+        await select_amount(update, context)
+
 
     elif text == "🎮 شروع دوئل":
 
         await update.message.reply_text(
             "🎮 بخش دوئل به‌زودی ساخته می‌شود."
         )
-
-
-
-    elif text == "🪙 خرید سکه":
-
-        await update.message.reply_text(
-            "🪙 خرید سکه به‌زودی فعال می‌شود."
-        )
-
 
 
     elif text == "👥 دعوت دوستان":
@@ -227,13 +221,11 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-
     elif text == "💸 برداشت وجه":
 
         await update.message.reply_text(
             "💸 بخش برداشت به‌زودی آماده می‌شود."
         )
-
 
 
     elif text == "👑 پنل مدیر":
@@ -247,13 +239,24 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-
     elif text == "👥 لیست کاربران":
 
         if user_id != ADMIN_ID:
             return
 
-        await show_users(update)
+        users = get_all_users()
+
+        msg = "👥 لیست کاربران:\n\n"
+
+        for user in users:
+
+            msg += (
+                f"🆔 {user[0]}\n"
+                f"👤 {user[1]}\n"
+                f"💰 {user[3]} تومان\n\n"
+            )
+
+        await update.message.reply_text(msg)
 
 
 
@@ -271,6 +274,26 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
+    elif text == "🧾 درخواست‌های پرداخت":
+
+        if user_id != ADMIN_ID:
+            return
+
+        payments = get_pending_payments()
+
+        if not payments:
+
+            await update.message.reply_text(
+                "✅ درخواست پرداختی وجود ندارد."
+            )
+
+        else:
+
+            await update.message.reply_text(
+                f"🧾 تعداد درخواست‌های در انتظار: {len(payments)}"
+            )
+
+
     elif text == "🔙 بازگشت":
 
         await update.message.reply_text(
@@ -280,14 +303,74 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-async def add_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def payment_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    if update.effective_user.id != ADMIN_ID:
+    query = update.callback_query
+
+    await query.answer()
+
+
+    data = query.data.split("_")
+
+    action = data[0]
+    user_id = int(data[1])
+    amount = int(data[2])
+
+
+    # پیدا کردن درخواست آخر کاربر
+    payments = get_pending_payments()
+
+    payment_id = None
+
+    for payment in payments:
+
+        if payment[1] == user_id and payment[2] == amount:
+            payment_id = payment[0]
+            break
+
+
+    if payment_id is None:
+
+        await query.edit_caption(
+            "❌ درخواست پیدا نشد."
+        )
+
         return
 
-    await update.message.reply_text(
-        "برای شارژ از پنل مدیر استفاده کن."
-    )
+
+
+    if action == "approve":
+
+        approve_payment(payment_id)
+
+
+        await context.bot.send_message(
+            user_id,
+            f"✅ پرداخت شما تایید شد.\n\n"
+            f"💰 {amount} تومان به حساب شما اضافه شد.\n"
+            f"موجودی شما: {get_balance(user_id)} تومان"
+        )
+
+
+        await query.edit_caption(
+            "✅ پرداخت تایید شد."
+        )
+
+
+    elif action == "reject":
+
+        reject_payment(payment_id)
+
+
+        await context.bot.send_message(
+            user_id,
+            "❌ رسید شما تایید نشد."
+        )
+
+
+        await query.edit_caption(
+            "❌ پرداخت رد شد."
+        )
 
 
 
@@ -295,36 +378,9 @@ def main():
 
     create_table()
 
+
     app = Application.builder().token(TOKEN).build()
 
-
-    charge_handler = ConversationHandler(
-        entry_points=[
-            MessageHandler(
-                filters.Regex("^💰 افزودن موجودی$"),
-                start_add_balance
-            )
-        ],
-
-        states={
-
-            ADD_USER_ID: [
-                MessageHandler(
-                    filters.TEXT & ~filters.COMMAND,
-                    get_target_user
-                )
-            ],
-
-            ADD_AMOUNT: [
-                MessageHandler(
-                    filters.TEXT & ~filters.COMMAND,
-                    save_balance
-                )
-            ]
-        },
-
-        fallbacks=[]
-    )
 
 
     app.add_handler(
@@ -335,13 +391,18 @@ def main():
     )
 
 
-    app.add_handler(charge_handler)
-
-
     app.add_handler(
-        CommandHandler(
-            "add",
-            add_command
+        CallbackQueryHandler(
+            payment_callback
+        )
+    )
+
+
+    # فقط عکس رسید
+    app.add_handler(
+        MessageHandler(
+            filters.PHOTO,
+            receive_photo
         )
     )
 
@@ -360,6 +421,7 @@ def main():
     app.run_polling(
         drop_pending_updates=True
     )
+
 
 
 if __name__ == "__main__":

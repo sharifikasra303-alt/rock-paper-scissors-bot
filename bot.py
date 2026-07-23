@@ -15,7 +15,8 @@ TOKEN = "8674292035:AAFB4y-isBof0U1YL9UPvbcevUbBdc0g8cY"
 ADMIN_ID = 5125387850
 
 
-def get_keyboard(user_id):
+# منوی اصلی
+def main_keyboard(user_id):
 
     if user_id == ADMIN_ID:
         keyboard = [
@@ -30,6 +31,21 @@ def get_keyboard(user_id):
             ["👥 دعوت دوستان", "🪙 خرید سکه"],
             ["💸 برداشت وجه"]
         ]
+
+    return ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True
+    )
+
+
+# منوی مدیر
+def admin_keyboard():
+
+    keyboard = [
+        ["👥 لیست کاربران", "💰 افزودن موجودی"],
+        ["📊 آمار ربات"],
+        ["🔙 بازگشت"]
+    ]
 
     return ReplyKeyboardMarkup(
         keyboard,
@@ -54,10 +70,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🆔 آیدی شما: {user.id}\n"
         f"💰 موجودی شما: {balance} تومان\n\n"
         "🎮 به ربات سنگ، کاغذ، قیچی خوش آمدید!",
-        reply_markup=get_keyboard(user.id)
+        reply_markup=main_keyboard(user.id)
     )
 
 
+# دستور افزودن موجودی قدیمی
 async def add_coin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if update.effective_user.id != ADMIN_ID:
@@ -84,12 +101,15 @@ async def add_coin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+
 async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = update.message.text
     user_id = update.effective_user.id
 
 
+
+    # موجودی
     if text == "💰 موجودی":
 
         balance = get_balance(user_id)
@@ -99,6 +119,8 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+
+    # خرید
     elif text == "🪙 خرید سکه":
 
         await update.message.reply_text(
@@ -111,6 +133,8 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+
+    # برداشت
     elif text == "💸 برداشت وجه":
 
         await update.message.reply_text(
@@ -118,6 +142,8 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+
+    # دعوت
     elif text == "👥 دعوت دوستان":
 
         await update.message.reply_text(
@@ -125,6 +151,8 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+
+    # بازی
     elif text == "🎮 شروع دوئل":
 
         await update.message.reply_text(
@@ -132,20 +160,21 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+
+    # ورود به پنل مدیر
     elif text == "👑 پنل مدیر":
 
         if user_id != ADMIN_ID:
             return
 
         await update.message.reply_text(
-            "👑 پنل مدیر\n\n"
-            "👥 برای دیدن کاربران:\n"
-            "👥 لیست کاربران\n\n"
-            "💰 افزودن موجودی:\n"
-            "/add USER_ID AMOUNT"
+            "👑 پنل مدیریت",
+            reply_markup=admin_keyboard()
         )
 
 
+
+    # لیست کاربران
     elif text == "👥 لیست کاربران":
 
         if user_id != ADMIN_ID:
@@ -153,14 +182,6 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
         users = get_all_users()
-
-
-        if not users:
-
-            await update.message.reply_text(
-                "❌ هیچ کاربری ثبت نشده."
-            )
-            return
 
 
         message = "👥 لیست کاربران:\n\n"
@@ -181,6 +202,48 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             message
         )
+
+
+
+    # آمار
+    elif text == "📊 آمار ربات":
+
+        if user_id != ADMIN_ID:
+            return
+
+
+        users = get_all_users()
+
+
+        await update.message.reply_text(
+            f"📊 آمار ربات\n\n"
+            f"👥 تعداد کاربران: {len(users)}"
+        )
+
+
+
+    # افزودن موجودی
+    elif text == "💰 افزودن موجودی":
+
+        if user_id != ADMIN_ID:
+            return
+
+
+        await update.message.reply_text(
+            "برای افزودن موجودی از دستور زیر استفاده کن:\n\n"
+            "/add USER_ID AMOUNT"
+        )
+
+
+
+    # بازگشت
+    elif text == "🔙 بازگشت":
+
+        await update.message.reply_text(
+            "منوی اصلی",
+            reply_markup=main_keyboard(user_id)
+        )
+
 
 
 def main():

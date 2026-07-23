@@ -1,19 +1,17 @@
-# bot.py - بخش 1/2
-
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     CommandHandler,
     MessageHandler,
+    CallbackQueryHandler,
     ContextTypes,
-    filters,
-    CallbackQueryHandler
+    filters
 )
 
 from database import (
+    create_table,
     add_user,
     get_balance,
-    create_table,
     get_all_users,
     create_payment,
     get_pending_payments,
@@ -29,18 +27,14 @@ ADMIN_ID = 5125387850
 
 def main_keyboard(user_id):
 
+    keyboard = [
+        ["🎮 شروع دوئل", "💰 موجودی"],
+        ["👥 دعوت دوستان", "🪙 خرید سکه"],
+        ["💸 برداشت وجه"]
+    ]
+
     if user_id == ADMIN_ID:
-        keyboard = [
-            ["🎮 شروع دوئل", "💰 موجودی"],
-            ["👥 دعوت دوستان", "🪙 خرید سکه"],
-            ["💸 برداشت وجه", "👑 پنل مدیر"]
-        ]
-    else:
-        keyboard = [
-            ["🎮 شروع دوئل", "💰 موجودی"],
-            ["👥 دعوت دوستان", "🪙 خرید سکه"],
-            ["💸 برداشت وجه"]
-        ]
+        keyboard[2].append("👑 پنل مدیر")
 
     return ReplyKeyboardMarkup(
         keyboard,
@@ -60,7 +54,7 @@ def admin_keyboard():
     )
 
 
-def buy_keyboard():
+def amount_keyboard():
 
     return ReplyKeyboardMarkup(
         [
@@ -104,11 +98,11 @@ async def buy_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "⚠️ فقط کارت به کارت\n"
         "• رسید را ارسال کنید\n"
         "• مسئولیت واریز اشتباه با شماست",
-        reply_markup=buy_keyboard()
+        reply_markup=amount_keyboard()
     )
 
 
-async def select_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def choose_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     amount = int(
         update.message.text.replace(" تومان", "")
@@ -121,11 +115,14 @@ async def select_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "💳 شماره کارت:\n"
         "6037991764297374\n"
         "به نام: علی شریفی\n\n"
+        "⚠️ فقط کارت به کارت\n"
+        "• رسید را ارسال کنید\n"
+        "• مسئولیت واریز اشتباه با شماست\n\n"
         "🧾 لطفا رسید خود را ارسال کنید:"
     )
 
 
-async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def receive_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if "amount" not in context.user_data:
         return
@@ -173,10 +170,7 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     del context.user_data["amount"]
-    # bot.py - بخش 2/2
-
-
-async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = update.message.text
     user_id = update.effective_user.id
@@ -191,9 +185,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-    elif "خرید سکه" in text:
-
-    await buy_menu(update, context)
+    elif text == "🪙 خرید سکه":
 
         await buy_menu(update, context)
 
@@ -206,28 +198,29 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "200000 تومان"
     ]:
 
-        await select_amount(update, context)
+        await choose_amount(update, context)
+
 
 
     elif text == "🎮 شروع دوئل":
 
         await update.message.reply_text(
-            "🎮 بخش دوئل به‌زودی ساخته می‌شود."
+            "🎮 بخش دوئل به‌زودی آماده می‌شود."
         )
 
 
     elif text == "👥 دعوت دوستان":
 
         await update.message.reply_text(
-            "👥 لینک دعوت به‌زودی ساخته می‌شود."
+            "👥 لینک دعوت به‌زودی اضافه می‌شود."
         )
 
 
-    elif "برداشت وجه" in text:
+    elif text == "💸 برداشت وجه":
 
-    await update.message.reply_text(
-        "💸 بخش برداشت به‌زودی آماده می‌شود."
-    )
+        await update.message.reply_text(
+            "💸 بخش برداشت به‌زودی آماده می‌شود."
+        )
 
 
     elif text == "👑 پنل مدیر":
@@ -241,6 +234,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+
     elif text == "👥 لیست کاربران":
 
         if user_id != ADMIN_ID:
@@ -248,17 +242,19 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         users = get_all_users()
 
-        msg = "👥 لیست کاربران:\n\n"
+        message = "👥 لیست کاربران:\n\n"
 
         for user in users:
 
-            msg += (
+            message += (
                 f"🆔 {user[0]}\n"
                 f"👤 {user[1]}\n"
                 f"💰 {user[3]} تومان\n\n"
             )
 
-        await update.message.reply_text(msg)
+        await update.message.reply_text(
+            message
+        )
 
 
 
@@ -269,9 +265,11 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         users = get_all_users()
 
+        total = len(users)
+
         await update.message.reply_text(
             f"📊 آمار ربات\n\n"
-            f"👥 تعداد کاربران: {len(users)}"
+            f"👥 تعداد کاربران: {total}"
         )
 
 
@@ -283,17 +281,10 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         payments = get_pending_payments()
 
-        if not payments:
+        await update.message.reply_text(
+            f"🧾 درخواست‌های در انتظار: {len(payments)}"
+        )
 
-            await update.message.reply_text(
-                "✅ درخواست پرداختی وجود ندارد."
-            )
-
-        else:
-
-            await update.message.reply_text(
-                f"🧾 تعداد درخواست‌های در انتظار: {len(payments)}"
-            )
 
 
     elif text == "🔙 بازگشت":
@@ -315,20 +306,25 @@ async def payment_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data.split("_")
 
     action = data[0]
+
     user_id = int(data[1])
+
     amount = int(data[2])
 
 
-    # پیدا کردن درخواست آخر کاربر
     payments = get_pending_payments()
 
     payment_id = None
 
+
     for payment in payments:
 
         if payment[1] == user_id and payment[2] == amount:
+
             payment_id = payment[0]
+
             break
+
 
 
     if payment_id is None:
@@ -349,14 +345,15 @@ async def payment_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             user_id,
             f"✅ پرداخت شما تایید شد.\n\n"
-            f"💰 {amount} تومان به حساب شما اضافه شد.\n"
-            f"موجودی شما: {get_balance(user_id)} تومان"
+            f"💰 مبلغ {amount} تومان اضافه شد.\n"
+            f"💳 موجودی جدید: {get_balance(user_id)} تومان"
         )
 
 
         await query.edit_caption(
             "✅ پرداخت تایید شد."
         )
+
 
 
     elif action == "reject":
@@ -384,7 +381,6 @@ def main():
     app = Application.builder().token(TOKEN).build()
 
 
-
     app.add_handler(
         CommandHandler(
             "start",
@@ -400,11 +396,10 @@ def main():
     )
 
 
-    # فقط عکس رسید
     app.add_handler(
         MessageHandler(
             filters.PHOTO,
-            receive_photo
+            receive_receipt
         )
     )
 
@@ -427,4 +422,5 @@ def main():
 
 
 if __name__ == "__main__":
+
     main()

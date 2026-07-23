@@ -8,7 +8,7 @@ from telegram.ext import (
     filters
 )
 
-from database import (
+from from database import (
     create_table,
     add_user,
     get_balance,
@@ -16,7 +16,14 @@ from database import (
     create_payment,
     get_pending_payments,
     approve_payment,
-    reject_payment
+    reject_payment,
+    update_balance,
+    create_duel,
+    find_duel,
+    join_duel,
+    save_choice,
+    get_duel,
+    finish_duel
 )
 
 
@@ -68,6 +75,18 @@ def amount_keyboard():
         resize_keyboard=True
     )
 
+def duel_amount_keyboard():
+
+    return ReplyKeyboardMarkup(
+        [
+            ["2500 تومان", "5000 تومان"],
+            ["10000 تومان", "20000 تومان"],
+            ["40000 تومان"],
+            ["🔙 بازگشت"]
+        ],
+        resize_keyboard=True
+    )
+
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -103,6 +122,14 @@ async def buy_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• رسید را ارسال کنید\n"
         "• مسئولیت واریز اشتباه با شماست",
         reply_markup=amount_keyboard()
+    )
+
+async def duel_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    await update.message.reply_text(
+        "🎮 مبلغ دوئل را انتخاب کنید:\n\n"
+        "💰 شرط بازی از موجودی شما کم می‌شود.",
+        reply_markup=duel_amount_keyboard()
     )
 
 
